@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title id="title">SWASF - Smart Weather Advisory</title>
+</head>
+<body>
+
+<h1 id="mainTitle">Smart Weather Advisory</h1>
+
+<!-- Language Selection -->
+<select onchange="changeLanguage(this.value)">
+    <option value="en">English</option>
+    <option value="te">Telugu</option>
+    <option value="hi">Hindi</option>
+</select>
+
+<br><br>
+
+<!-- Google Login -->
+<button onclick="loginWithGoogle()">Login with Google</button>
+
+<hr>
+
+<button onclick="useLocation()">Use My Location</button>
+
+<br><br>
+
+<input type="text" id="city" placeholder="Enter City">
+<button onclick="getWeatherByCity()">Get Weather</button>
+
+<hr>
+
+<div id="result"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
+<script>
+
+// ------------------ FIREBASE CONFIG ------------------
+
+var firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+};
+
+firebase.initializeApp(firebaseConfig);
+
+function loginWithGoogle() {
+    var provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+    .then(function(result) {
+        alert("Welcome " + result.user.displayName);
+    });
+}
+
+// ------------------ WEATHER FUNCTIONS ------------------
+
+function useLocation() {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        fetchWeather({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+        });
+    });
+}
+
+function getWeatherByCity() {
+    const city = document.getElementById("city").value;
+    fetchWeather({city: city});
+}
+
+function fetchWeather(data) {
+    fetch("/weather", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error){
+            alert(data.error);
+            return;
+        }
+        showResult(data);
+    });
+}
+
+function showResult(data) {
+    let forecastHTML = "<h3>5-Day Forecast</h3>";
+
+    data.forecast.forEach(f => {
+        forecastHTML += `
+            <p>${f.date} | ${f.temp}°C | ${f.condition}</p>
+        `;
+    });
+
+    document.getElementById("result").innerHTML = `
+        <h2>${data.city}</h2>
+        <p>Temperature: ${data.temperature} °C</p>
+        <p>Condition: ${data.condition}</p>
+        <p><b>Advice:</b> ${data.advice}</p>
+        ${forecastHTML}
+    `;
+}
+
+// ------------------ MULTI LANGUAGE ------------------
+
+const translations = {
+    en: { title: "Smart Weather Advisory" },
+    te: { title: "స్మార్ట్ వాతావరణ సలహా" },
+    hi: { title: "स्मार्ट मौसम सलाह" }
+};
+
+function changeLanguage(lang) {
+    document.getElementById("mainTitle").innerText = translations[lang].title;
+}
+
+</script>
+
+</body>
+</html>
